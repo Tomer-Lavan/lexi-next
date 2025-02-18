@@ -52,6 +52,9 @@ const AgentForm: React.FC<AgentFormProps> = ({
                   topPEnabled: editAgent.topP !== null,
                   frequencyPenaltyEnabled: editAgent.frequencyPenalty !== null,
                   presencePenaltyEnabled: editAgent.presencePenalty !== null,
+                  //cameraCaptureRate: editAgent.cameraCaptureRate !== null,
+                  audioInput: editAgent.audioInput !== null,
+                  //vaIntegration: editAgent.vaIntegration !== null,
               }
             : initialSlidersEnabled,
     );
@@ -301,6 +304,8 @@ const AgentForm: React.FC<AgentFormProps> = ({
                 0.01,
                 slidersEnabled.presencePenaltyEnabled,
             )}
+            
+            {renderCheckbox('audioInput', 'audioInput', slidersEnabled.audioInputEnabled)}
             <ChipsInput
                 list={agent.stopSequences}
                 setList={(stops) => setAgent({ ...agent, stopSequences: stops })}

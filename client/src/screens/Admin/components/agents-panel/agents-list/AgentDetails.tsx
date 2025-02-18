@@ -79,6 +79,14 @@ export const AgentDetails = ({ agent }) => (
                         secondary={agent.presencePenalty !== null ? agent.presencePenalty : 'Not Active'}
                     />
                 </ListItem>
+                
+                <ListItem>
+                    <ListItemText
+                        primary="Audio Input"
+                        secondary={agent.audioInput !== null ? agent.audioInput : 'Not Active'}
+                    />
+                </ListItem>
+                
                 <ListItem>
                     <ListItemText
                         primary="Stop Sequences"
