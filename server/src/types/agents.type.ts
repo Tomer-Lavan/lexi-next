@@ -7,6 +7,7 @@ export interface IAgent {
     systemStarterPrompt: string;
     beforeUserSentencePrompt: string;
     afterUserSentencePrompt: string;
+    inverseTimeDelay: number;
     firstChatSentence: string;
     model: string;
     temperature: number;

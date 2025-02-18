@@ -35,6 +35,14 @@ export const AgentDetails = ({ agent }) => (
                         />
                     </ListItem>
                 )}
+                {agent.inverseTimeDelay && (
+                    <ListItem>
+                        <ListItemText
+                            primary="Inverse Time Delay"
+                            secondary={agent.inverseTimeDelay}
+                        />
+                    </ListItem>
+                )}
             </List>
         </Grid>
         <Grid item xs={12} md={6} style={{ paddingLeft: 0 }}>

@@ -13,6 +13,12 @@ export const sendMessage = async (message: MessageType, conversationId: string):
             message,
             conversationId,
         });
+        //console.log(response)
+        if(response.data.content && response.data.timeDelay != null) {
+            const num_word = response.data.content.trim().split(/\s+/).length;
+            console.log(num_word)
+            await new Promise(resolve => setTimeout(resolve, (num_word / response.data.timeDelay) * 1000));
+        }
         return response.data;
     } catch (error) {
         throw error;
@@ -89,6 +95,11 @@ export const getConversation = async (conversationId: string): Promise<MessageTy
         const response = await axiosInstance.get(
             `/${ApiPaths.CONVERSATIONS_PATH}/conversation?conversationId=${conversationId}`,
         );
+<<<<<<< HEAD
+=======
+        //console.log(response["conversationMetaData"])
+        
+>>>>>>> f08c762 (some updates with delay function)
         return response.data;
     } catch (error) {
         throw error;

@@ -272,6 +272,16 @@ const AgentForm: React.FC<AgentFormProps> = ({
                 size="small"
                 margin="normal"
             />
+
+            <TextField
+                fullWidth
+                label="Inverse time delay"
+                name="inverseTimeDelay"
+                value={agent.inverseTimeDelay}
+                onChange={handleChange}
+                size="small"
+                margin="normal"
+            />
             {renderSlider('temperature', 'temperature', 0, 2, 0.01, slidersEnabled.temperatureEnabled)}
             {renderSlider('maxTokens', 'max tokens', 1, 4096, 1, slidersEnabled.maxTokensEnabled)}
             {renderSlider('topP', 'top p', 0, 1, 0.01, slidersEnabled.topPEnabled)}

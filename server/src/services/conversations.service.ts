@@ -29,15 +29,53 @@ class ConversationsService {
             throw error;
         }
 
+<<<<<<< HEAD
         const messages: any[] = this.getConversationMessages(metadataConversation.agent, conversation, message);
         const chatRequest = this.getChatRequest(metadataConversation.agent, messages);
         await this.createMessageDoc(message, conversationId, conversation.length + 1);
 
         let assistantMessage = '';
 
+=======
+        const agent = JSON.parse(JSON.stringify(metadataConversation.agent));
+        //const { cameraCaptureRate, ...agentWithoutCameraCaptureRate } = agent;
+        //console.log(agent)
+        const ccr = agent.cameraCaptureRate
+        const vai = agent.vaIntegration
+        const timeDelay = agent.inverseTimeDelay
+        
+        //console.log("vai", vai)
+        //console.log("ccr", ccr)
+        delete agent.cameraCaptureRate;
+        delete agent.vaIntegration;
+        //let tempt = await CurrentStateModels.find({ }).exec();
+        //console.log(tempt)
+        let val = 0;
+        let ar = 0
+        
+        if ( ccr != null && vai != null ) {
+            const current_state = await this.getCurrentState(conversationId)
+            val = current_state[0]["valence"] / current_state[0]["count"]
+            ar = current_state[0]["arousal"] / current_state[0]["count"]
+        }
+        //console.log(current_state[0]["valence"])
+        //console.log(current_state[0]["arousal"])
+        
+        const og_text = { ...message };
+        //console.log(og_text)
+        const messages: any[] = this.getConversationMessages(agent, conversation, message, val, ar, ccr, vai);
+        const chatRequest = this.getChatRequest(agent, messages);
+        await this.createMessageDoc(message, conversationId, conversation.length + 1, val, ar);
+
+        let assistantMessage = '';
+        let streamExplainable = streamResponse;
+>>>>>>> f08c762 (some updates with delay function)
         if (!streamResponse) {
             const response = await openai.chat.completions.create(chatRequest);
             assistantMessage = response.choices[0].message.content?.trim();
+            //const num_word = assistantMessage.trim().split(/\s+/).length;
+            //console.log(num_word)
+            //await new Promise(resolve => setTimeout(resolve, (num_word) * 1000));
         } else {
             const responseStream = await openai.chat.completions.create({ ...chatRequest, stream: true });
             for await (const partialResponse of responseStream) {
@@ -45,12 +83,16 @@ class ConversationsService {
                 await streamResponse(assistantMessagePart);
                 assistantMessage += assistantMessagePart;
             }
+            //const num_word = assistantMessage.trim().split(/\s+/).length;
+            //console.log(num_word)
+            //await new Promise(resolve => setTimeout(resolve, (num_word) * 1000));
         }
-
+        //console.log("before create message", timeDelay)
         const savedMessage = await this.createMessageDoc(
             {
                 content: assistantMessage,
                 role: 'assistant',
+                timeDelay: timeDelay
             },
             conversationId,
             conversation.length + 2,
@@ -61,6 +103,43 @@ class ConversationsService {
             $set: { lastMessageDate: new Date(), lastMessageTimestamp: Date.now() },
         });
 
+<<<<<<< HEAD
+=======
+        if ( ccr != null && vai != null ) {
+            const Exmessages: any[] = this.getExplainableText(agent, conversation, message, val, ar);
+            const ExchatRequest = this.getChatRequest(agent, Exmessages);
+
+            let ExassistantMessage = '';        
+
+            if (true) {
+                const response = await openai.chat.completions.create(ExchatRequest);
+                ExassistantMessage = response.choices[0].message.content?.trim();
+            } 
+            /*else {
+                const responseStream = await openai.chat.completions.create({ ...ExchatRequest, stream: true });
+                for await (const partialResponse of responseStream) {
+                    const assistantMessagePart = partialResponse.choices[0]?.delta?.content || '';
+                    await streamResponse(assistantMessagePart);
+                    ExassistantMessage += assistantMessagePart;
+                }
+            }*/
+            console.log("idk why", og_text)
+            await this.createExplainableDoc(
+                og_text,
+                message,
+                {
+                    content: ExassistantMessage,
+                    role: 'assistant',
+                    timeDelay: timeDelay
+                },
+                conversationId,
+                conversation.length + 2,
+                val,
+                ar,
+            );
+        }
+        //console.log(savedMessage)
+>>>>>>> f08c762 (some updates with delay function)
         return savedMessage;
     };
 
@@ -96,6 +175,7 @@ class ConversationsService {
         const firstMessage: Message = {
             role: 'assistant',
             content: user.isAdmin ? agent.firstChatSentence : user.agent.firstChatSentence,
+            timeDelay: null
         };
         await Promise.all([
             this.createMessageDoc(firstMessage, res._id.toString(), 1),
@@ -108,8 +188,8 @@ class ConversationsService {
 
     getConversation = async (conversationId: string, isLean = false): Promise<Message[]> => {
         const returnValues = isLean
-            ? { _id: 0, role: 1, content: 1 }
-            : { _id: 1, role: 1, content: 1, userAnnotation: 1 };
+            ? { _id: 0, role: 1, content: 1, timeDelay: 1}
+            : { _id: 1, role: 1, content: 1, timeDelay: 1, userAnnotation: 1 };
 
         const conversation = await ConversationsModel.find({ conversationId }, returnValues);
 
@@ -190,8 +270,39 @@ class ConversationsService {
         const systemPrompt = { role: 'system', content: agent.systemStarterPrompt };
         const beforeUserMessage = { role: 'system', content: agent.beforeUserSentencePrompt };
         const afterUserMessage = { role: 'system', content: agent.afterUserSentencePrompt };
+<<<<<<< HEAD
 
+=======
+        const inverseTimeDelay = { role: 'system', content: agent.inverseTimeDelay };
+        if ( ccr != null && vai != null ) {
+            const final_message = "The valence of the user is "+ val + " and the arousal is "+ ar + "while user replies to you " + message["content"]
+            message["content"] = final_message
+        }
+        console.log(message)
+>>>>>>> f08c762 (some updates with delay function)
         const messages = [
+            systemPrompt,
+            ...conversation,
+            beforeUserMessage,
+            message,
+            afterUserMessage,
+            { role: 'assistant', content: '', timeDelay: inverseTimeDelay },
+        ];
+
+        return messages;
+    };
+
+<<<<<<< HEAD
+=======
+    private getExplainableText = (settings: any, conversation: any[], message: any, val: number, ar: number) => {
+        const systemPrompt: Message = { role: 'system', content: "", timeDelay: null };
+        const beforeUserMessage = { role: 'system', content: "" };
+        const afterUserMessage = { role: 'system', content: "" };
+        //console.log(message)
+        const final_message = "The valence of the user is "+ val + " and the arousal is "+ ar + ". What do you understand from these about the emotions expressed by the user? What behavioral qualities should be displayed while responding to this user to improve their mental state?"
+        message["content"] = final_message
+        console.log(message)
+        const messages: any = [
             systemPrompt,
             ...conversation,
             beforeUserMessage,
@@ -203,19 +314,27 @@ class ConversationsService {
         return messages;
     };
 
+>>>>>>> f08c762 (some updates with delay function)
     private createMessageDoc = async (
         message: Message,
         conversationId: string,
         messageNumber: number,
     ): Promise<Message> => {
+        
         const res = await ConversationsModel.create({
             content: message.content,
             role: message.role,
             conversationId,
             messageNumber,
+<<<<<<< HEAD
+=======
+            valence: val,
+            arousal: ar,
+            timeDelay: message.timeDelay,
+>>>>>>> f08c762 (some updates with delay function)
         });
-
-        return { _id: res._id, role: res.role, content: res.content, userAnnotation: res.userAnnotation };
+        //console.log("resTimeDelay", res.timeDelay)
+        return { _id: res._id, role: res.role, content: res.content, userAnnotation: res.userAnnotation, timeDelay: res.timeDelay };
     };
 
     private getChatRequest = (agent: IAgent, messages: Message[]) => {

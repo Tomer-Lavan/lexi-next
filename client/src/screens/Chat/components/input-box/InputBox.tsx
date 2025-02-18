@@ -40,7 +40,7 @@ const InputBox: React.FC<InputBoxProps> = ({
         setMessage('');
         setIsMessageLoading(true);
         try {
-            if (isStreamMessage) {
+            if (isStreamMessage && false) {
                 sendStreamMessage(
                     { content: messageContent, role: 'user' },
                     conversationId,

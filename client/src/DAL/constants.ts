@@ -17,6 +17,7 @@ export const defaultSettings: AgentType = {
     systemStarterPrompt: '',
     beforeUserSentencePrompt: '',
     afterUserSentencePrompt: '',
+    inverseTimeDelay: null,
     firstChatSentence: '',
     model: agentsOptions[0],
     temperature: null,

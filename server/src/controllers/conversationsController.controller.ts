@@ -10,6 +10,7 @@ class ConvesationsController {
             this.validateMessage(message.content);
 
             const savedResponse = await conversationsService.message(message, conversationId);
+            //console.log(savedResponse);
             res.status(200).send(savedResponse);
         },
         (req, res, error) => {
