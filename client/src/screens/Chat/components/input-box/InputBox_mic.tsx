@@ -1,9 +1,10 @@
+import { useEffect, useRef, useState } from 'react';
 import { SnackbarStatus, useSnackbar } from '@contexts/SnackbarProvider';
 import { MessageType } from '@models/AppModels';
 import SendIcon from '@mui/icons-material/Send';
 import MicIcon from '@mui/icons-material/Mic';
-import { Box, Button, IconButton } from '@mui/material';
-import { useState } from 'react';
+import MicOffIcon from '@mui/icons-material/MicOff';
+import { Box, Button, IconButton, Typography } from '@mui/material';
 import { sendMessage, sendStreamMessage } from '../../../../DAL/server-requests/conversations';
 import { StyledInputBase, StyledInputBox } from './InputBox.s';
 
@@ -29,6 +30,134 @@ const InputBox_mic: React.FC<InputBoxProps> = ({
     const { openSnackbar } = useSnackbar();
     const [message, setMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState(null);
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordingTime, setRecordingTime] = useState(0);
+    const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+    const audioChunks = useRef<Blob[]>([]);
+    const timerRef = useRef<number | null>(null);
+
+    // Audio visualizer setup
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
+    const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
+    const [animationId, setAnimationId] = useState<number | null>(null);
+
+    useEffect(() => {
+        if (isRecording) {
+            timerRef.current = window.setInterval(() => {
+                setRecordingTime((prev) => prev + 1);
+            }, 1000);
+        } else if (timerRef.current) {
+            clearInterval(timerRef.current);
+        }
+
+        if (isRecording && audioContext) {
+            visualizeAudio(analyser);
+        }
+
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, [isRecording]);
+
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const recorder = new MediaRecorder(stream);
+            recorder.ondataavailable = (event) => {
+                if (event.data.size > 0) audioChunks.current.push(event.data);
+            };
+            recorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks.current, { type: 'audio/wav' });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                console.log('Audio recorded:', audioUrl);
+                audioChunks.current = [];
+            };
+            recorder.start();
+            setMediaRecorder(recorder);
+            setIsRecording(true);
+            setRecordingTime(0);
+
+            // Setup AudioContext for visualizer
+            const audioCtx = new AudioContext();
+            const analyserNode = audioCtx.createAnalyser();
+            analyserNode.fftSize = 256;
+            const source = audioCtx.createMediaStreamSource(stream);
+            source.connect(analyserNode);
+            setAudioContext(audioCtx);
+            setAnalyser(analyserNode);
+
+            // Start animation
+            visualizeAudio(analyserNode);
+        } catch (error) {
+            console.error('Error accessing microphone:', error);
+            openSnackbar('Microphone access denied', SnackbarStatus.ERROR);
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorder) {
+            mediaRecorder.stop();
+            setIsRecording(false);
+        }
+        if (audioContext) {
+            audioContext.close();
+            setAudioContext(null);
+        }
+        if (animationId) {
+            cancelAnimationFrame(animationId);
+            setAnimationId(null);
+        }
+    };
+
+    const visualizeAudio = (analyser: AnalyserNode) => {
+        const canvas = canvasRef.current;
+        if (!canvasRef.current) {
+            console.error("Canvas not found - Retrying in 500ms...");
+            setTimeout(() => visualizeAudio(analyser), 500); // Retry after 500ms
+            return;
+        }
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            console.error("Canvas context is null");
+            return;
+        }
+
+        console.log("Canvas successfully found, starting visualization...");
+    
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        console.log("Buffer Length in visual aud:", bufferLength);
+    
+        const draw = () => {
+            analyser.getByteTimeDomainData(dataArray);
+    
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+            ctx.strokeStyle = 'blue';
+            ctx.lineWidth = 2;
+    
+            const sliceWidth = canvas.width / bufferLength;
+            let x = 0;
+    
+            for (let i = 0; i < bufferLength; i++) {
+                const v = dataArray[i] / 128.0;
+                const y = (v * canvas.height) / 2;
+    
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+                x += sliceWidth;
+            }
+    
+            ctx.stroke();
+            requestAnimationFrame(draw);
+        };
+    
+        draw();
+    };    
 
     const handleSendMessage = async () => {
         if (!message && !errorMessage && !message.trim().length) {
@@ -133,21 +262,40 @@ const InputBox_mic: React.FC<InputBoxProps> = ({
                 <StyledInputBox>
                     <StyledInputBase
                         fullWidth
-                        placeholder="Type a message…"
+                        placeholder={isRecording ? "Recording in progress..." : "Type a message…"}
                         multiline
                         maxRows={5}
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         onKeyDown={handleKeyDown}
                         fontSize={fontSize === 'sm' ? '1rem' : '1.25rem'}
+                        disabled={isRecording}
                     />
-                    <IconButton color="primary" onClick={handleSendMessage}>
-                        <MicIcon />
+                    <IconButton color="primary" onClick={isRecording ? stopRecording : startRecording}>
+                        {isRecording ? <MicOffIcon /> : <MicIcon />}
                     </IconButton>
                     <IconButton color="primary" onClick={handleSendMessage}>
                         <SendIcon />
                     </IconButton>
                 </StyledInputBox>
+
+            )};
+
+            {isRecording && (
+                <Box style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 10 }}>
+                    <Typography variant="body1" color="secondary">
+                        Recording: {recordingTime}s
+                    </Typography>
+                    <canvas
+                        ref={canvasRef}
+                        width={300}
+                        height={50}
+                        style={{ backgroundColor: '#f5f5f5', borderRadius: '5px', marginTop: '10px' }}
+                    />
+                    <Button variant="contained" color="error" onClick={stopRecording} style={{ marginTop: 10 }}>
+                        Stop
+                    </Button>
+                </Box>
             )}
         </Box>
     );
