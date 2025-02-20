@@ -4,6 +4,8 @@ import { MessageType } from '@models/AppModels';
 import SendIcon from '@mui/icons-material/Send';
 import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
+import StopIcon from '@mui/icons-material/Stop';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { Box, Button, IconButton, Typography } from '@mui/material';
 import { sendMessage, sendStreamMessage } from '../../../../DAL/server-requests/conversations';
 import { StyledInputBase, StyledInputBox } from './InputBox.s';
@@ -33,6 +35,8 @@ const InputBox_mic: React.FC<InputBoxProps> = ({
     const [isRecording, setIsRecording] = useState(false);
     const [recordingTime, setRecordingTime] = useState(0);
     const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+    const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+    const [audioURL, setAudioURL] = useState<string | null>(null);
     const audioChunks = useRef<Blob[]>([]);
     const timerRef = useRef<number | null>(null);
 
@@ -50,11 +54,6 @@ const InputBox_mic: React.FC<InputBoxProps> = ({
         } else if (timerRef.current) {
             clearInterval(timerRef.current);
         }
-
-        if (isRecording && audioContext) {
-            visualizeAudio(analyser);
-        }
-
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
         };
@@ -68,9 +67,10 @@ const InputBox_mic: React.FC<InputBoxProps> = ({
                 if (event.data.size > 0) audioChunks.current.push(event.data);
             };
             recorder.onstop = () => {
-                const audioBlob = new Blob(audioChunks.current, { type: 'audio/wav' });
-                const audioUrl = URL.createObjectURL(audioBlob);
-                console.log('Audio recorded:', audioUrl);
+                const blob = new Blob(audioChunks.current, { type: 'audio/wav' });
+                setAudioBlob(blob);
+                setAudioURL(URL.createObjectURL(blob));
+                //console.log('Audio recorded:', audioUrl);
                 audioChunks.current = [];
             };
             recorder.start();
@@ -107,6 +107,15 @@ const InputBox_mic: React.FC<InputBoxProps> = ({
         if (animationId) {
             cancelAnimationFrame(animationId);
             setAnimationId(null);
+        }
+
+        // Clear the canvas when stopping
+        const canvas = canvasRef.current;
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
         }
     };
 
@@ -157,7 +166,30 @@ const InputBox_mic: React.FC<InputBoxProps> = ({
         };
     
         draw();
-    };    
+    };
+    
+    const visualizePlayback = async () => {
+        if (!audioBlob) return;
+        
+        console.log("audioBlob present I guess")
+        const arrayBuffer = await audioBlob.arrayBuffer();
+        const audioCtx = new AudioContext();
+        const analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 256;
+    
+        const source = audioCtx.createBufferSource();
+        audioCtx.decodeAudioData(arrayBuffer, (buffer) => {
+            source.buffer = buffer;
+            source.connect(analyserNode);
+            analyserNode.connect(audioCtx.destination);
+            source.start();
+        });
+    
+        setAudioContext(audioCtx);
+        setAnalyser(analyserNode);
+        visualizeAudio(analyserNode);
+    };
+    
 
     const handleSendMessage = async () => {
         if (!message && !errorMessage && !message.trim().length) {
@@ -272,7 +304,7 @@ const InputBox_mic: React.FC<InputBoxProps> = ({
                         disabled={isRecording}
                     />
                     <IconButton color="primary" onClick={isRecording ? stopRecording : startRecording}>
-                        {isRecording ? <MicOffIcon /> : <MicIcon />}
+                        {isRecording ? <StopIcon /> : <MicIcon />}
                     </IconButton>
                     <IconButton color="primary" onClick={handleSendMessage}>
                         <SendIcon />
@@ -281,21 +313,24 @@ const InputBox_mic: React.FC<InputBoxProps> = ({
 
             )};
 
-            {isRecording && (
-                <Box style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 10 }}>
+            <Box style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 10 }}>  
+                {isRecording && (
                     <Typography variant="body1" color="secondary">
                         Recording: {recordingTime}s
                     </Typography>
-                    <canvas
-                        ref={canvasRef}
-                        width={300}
-                        height={50}
-                        style={{ backgroundColor: '#f5f5f5', borderRadius: '5px', marginTop: '10px' }}
-                    />
-                    <Button variant="contained" color="error" onClick={stopRecording} style={{ marginTop: 10 }}>
-                        Stop
-                    </Button>
-                </Box>
+                )}
+                <canvas
+                    ref={canvasRef}
+                    width={300}
+                    height={50}
+                    style={{ backgroundColor: '#f5f5f5', borderRadius: '5px', marginTop: '10px' }}
+                />
+            </Box>
+
+            {audioBlob && (
+                <IconButton color="primary" onClick={visualizePlayback}>
+                    <PlayArrowIcon />
+                </IconButton>
             )}
         </Box>
     );
