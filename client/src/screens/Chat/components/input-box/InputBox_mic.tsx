@@ -39,6 +39,7 @@ const InputBox_mic: React.FC<InputBoxProps> = ({
     const [audioURL, setAudioURL] = useState<string | null>(null);
     const audioChunks = useRef<Blob[]>([]);
     const timerRef = useRef<number | null>(null);
+    const [hasAudio, setHasAudio] = useState(false);
 
     // Audio visualizer setup
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -59,6 +60,22 @@ const InputBox_mic: React.FC<InputBoxProps> = ({
         };
     }, [isRecording]);
 
+    const handleSend = () => {
+        if (hasAudio && audioBlob) {
+          sendAudio(audioBlob);
+        } else {
+          handleSendMessage();
+        }
+    };
+
+
+    const sendAudio = (audio: Blob) => {
+        console.log("Sending audio...");
+        // Convert to FormData or base64 if needed and send
+        setAudioBlob(null); // Clear audio after sending
+        setHasAudio(false);
+      };
+    
     const startRecording = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -99,6 +116,7 @@ const InputBox_mic: React.FC<InputBoxProps> = ({
         if (mediaRecorder) {
             mediaRecorder.stop();
             setIsRecording(false);
+            setHasAudio(true);
         }
         if (audioContext) {
             audioContext.close();
@@ -306,7 +324,7 @@ const InputBox_mic: React.FC<InputBoxProps> = ({
                     <IconButton color="primary" onClick={isRecording ? stopRecording : startRecording}>
                         {isRecording ? <StopIcon /> : <MicIcon />}
                     </IconButton>
-                    <IconButton color="primary" onClick={handleSendMessage}>
+                    <IconButton color="primary" onClick={handleSend}>
                         <SendIcon />
                     </IconButton>
                 </StyledInputBox>
