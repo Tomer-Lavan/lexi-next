@@ -1,4 +1,4 @@
-import { MessageType } from '@root/models/AppModels';
+import { MessageType, AudioType } from '@root/models/AppModels';
 import { ApiPaths } from '../constants';
 import axiosInstance from './AxiosInstance';
 
@@ -24,6 +24,46 @@ export const sendMessage = async (message: MessageType, conversationId: string):
         throw error;
     }
 };
+
+export const sendAudio = async (message: AudioType, conversationId: string): Promise<AudioType> => {
+    console.log(message);
+
+    const formData = new FormData();
+    formData.append("audio", message.content); // Attach the Blob
+    formData.append("role", message.role); // Attach other data
+    formData.append("conversationId", conversationId); // Include conversation ID
+
+    try {
+        const response = await axiosInstance.post(
+            `/${ApiPaths.CONVERSATIONS_PATH}/audio`,
+            formData,
+            { responseType: "blob" } // Ensures we receive binary audio data
+        );
+
+        // Convert response Blob into FormData
+        const receivedFormData = new FormData();
+        receivedFormData.append("audioBlob", response.data);
+
+        // Extract metadata from headers if available
+        const metadata = {
+            contentType: response.headers["content-type"] || "audio/mpeg",
+        };
+        
+        
+
+        return {
+            ...message, // Keep original message fields
+            content: response.data, // Store the received audio as a Blob
+            role: "assistant",
+            //metadata, // Include metadata (optional)
+        };
+    } catch (error) {
+        console.error("Error sending/receiving audio:", error);
+        throw error;
+    }
+};
+
+
 
 export const sendStreamMessage = (
     message: MessageType,

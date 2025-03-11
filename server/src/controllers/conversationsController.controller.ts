@@ -2,6 +2,29 @@ import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { conversationsService } from '../services/conversations.service';
 import { requestHandler } from '../utils/requestHandler';
+//import * as fs from 'fs/promises';
+import * as path from 'path';
+const fs = require('fs');
+import { format } from 'date-fns';
+//import { TimeSeriesAggregationType } from 'redis';
+import multer, { Multer } from "multer";
+import FormData from "form-data";
+
+const upload = multer({ storage: multer.memoryStorage() });
+
+// Extend Request type to include `file`
+interface MulterRequest extends Request {
+    file?: Multer.File;
+}
+
+async function checkFolderExists(folderPath: string): Promise<boolean> {
+    try {
+      await fs.access(folderPath);
+      return true;
+    } catch (error) {
+      return false;
+    }
+}
 
 class ConvesationsController {
     message = requestHandler(
@@ -25,6 +48,100 @@ class ConvesationsController {
             res.status(500).json({ message: 'Internal Server Error' });
         },
     );
+
+    audio = [
+        upload.single("audio"),
+        requestHandler(
+            async (req: MulterRequest, res: Response) => {
+                const { role, conversationId } = req.body;
+                const audioBlob = req.file?.buffer;
+    
+                if (!audioBlob) {
+                    return res.status(400).json({ message: "Audio file is missing" });
+                }
+    
+                const savedResponse = await conversationsService.audio(
+                    { content: audioBlob, role },
+                    conversationId
+                );
+    
+                console.log(savedResponse);
+    
+                // Create FormData response
+                const formData = new FormData();
+                formData.append("metadata", JSON.stringify({
+                    _id: savedResponse._id,
+                    role: savedResponse.role,
+                    userAnnotation: savedResponse.userAnnotation,
+                    timeDelay: savedResponse.timeDelay,
+                    contentType: "audio/mpeg",
+                }));
+    
+                formData.append("audio", savedResponse.content, {
+                    filename: "response_audio.mp3",
+                    contentType: "audio/mpeg",
+                });
+    
+                // Set headers manually
+                res.setHeader("Content-Type", `multipart/form-data; boundary=${formData.getBoundary()}`);
+    
+                // Pipe FormData response to the client
+                formData.pipe(res);
+            },
+            (req, res, error) => {
+                res.status(500).json({ message: "Internal Server Error" });
+            }
+        ),
+    ];
+    
+
+
+    sendSnap = requestHandler(async (req: Request, res: Response) => {
+        //console.log("I am in function");
+        try{
+            //console.log("Hello world");
+            const { image, conversationId, experimentId }: { image, conversationId: string , experimentId: string} = req.body;
+            const temp = `${conversationId}_${experimentId}`;
+            const folderPath = path.join("webcamBase/", temp);
+            const now = new Date();
+            const formattedDateTime = format(now, 'yyyyMMddHHmmss');
+            //console.log('Image data:', image);
+            const parts = image.split(',');
+            if (parts.length < 2) {
+                console.error('Invalid base64 image data');
+                process.exit(1);
+            }
+            const base64Data = parts[1];
+            // Debug: Check base64 string
+            //console.log(base64Data.length); // Should be a large number
+            //console.log(base64Data.substring(0, 30)); // Check first few characters
+
+            // Convert to buffer
+            const buffer = Buffer.from(base64Data, 'base64');
+
+            checkFolderExists(folderPath).then((exists) => {
+                if (exists) {
+                    console.log('Folder exists');
+                    //const buffer = Buffer.from(image.split(',')[1], 'base64');
+                    fs.writeFileSync(`${folderPath}/${formattedDateTime}.png`, buffer);
+                    res.sendStatus(200);
+                } else {
+                    try{
+                        console.log('Folder does not exist');
+                        fs.mkdirSync(folderPath);
+                        console.log('Folder created successfully');
+                    } catch(err) {
+                        console.log(err)
+                    }
+                    //const buffer = Buffer.from(image.split(',')[1], 'base64');
+                    fs.writeFileSync(`${folderPath}/${formattedDateTime}.png`, buffer);
+                    res.sendStatus(200);
+                }})
+        }
+        catch (err) {
+            console.log(err);
+        }
+    });
 
     streamMessage = requestHandler(
         async (req: Request, res: Response) => {

@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { SnackbarStatus, useSnackbar } from '@contexts/SnackbarProvider';
-import { MessageType } from '@models/AppModels';
+import { MessageType, AudioType } from '@models/AppModels';
 import SendIcon from '@mui/icons-material/Send';
 import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
 import StopIcon from '@mui/icons-material/Stop';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { Box, Button, IconButton, Typography } from '@mui/material';
-import { sendMessage, sendStreamMessage } from '../../../../DAL/server-requests/conversations';
+import { sendMessage, sendStreamMessage, sendAudio } from '../../../../DAL/server-requests/conversations';
 import { StyledInputBase, StyledInputBox } from './InputBox.s';
 
 interface InputBoxProps {
@@ -62,19 +62,41 @@ const InputBox_mic: React.FC<InputBoxProps> = ({
 
     const handleSend = () => {
         if (hasAudio && audioBlob) {
-          sendAudio(audioBlob);
+          handleAudio();
         } else {
           handleSendMessage();
         }
     };
 
 
-    const sendAudio = (audio: Blob) => {
+    const handleAudio = async () => {
         console.log("Sending audio...");
-        // Convert to FormData or base64 if needed and send
+
+        if (!audioBlob && !errorMessage) {
+            openSnackbar('Message cannot be empty', SnackbarStatus.WARNING);
+            return;
+        }
+        const messageContent: Blob = audioBlob;
+        const conversation: AudioType[] = [...messages, { content: messageContent, role: 'user' }];
+        setMessages(conversation);
+        setMessage('');
+        setIsMessageLoading(true);
+        try {
+            {
+                const response = await sendAudio({ content: messageContent, role: 'user' }, conversationId);
+                console.log(response)
+                setMessages((prevMessages) => [...prevMessages, response]);
+                setIsMessageLoading(false);
+                setErrorMessage(null);
+            }
+        } catch (err) {
+            onMessageError(conversation, messageContent, err);
+        }
+
+
         setAudioBlob(null); // Clear audio after sending
         setHasAudio(false);
-      };
+    };
     
     const startRecording = async () => {
         try {

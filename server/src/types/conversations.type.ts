@@ -37,6 +37,14 @@ export interface Message {
     userAnnotation?: UserAnnotation;
 }
 
+export interface Audio {
+    _id?: mongoose.Types.ObjectId;
+    role: 'system' | 'user' | 'assistant';
+    content: Blob | Buffer | string;
+    timeDelay: number;
+    userAnnotation?: UserAnnotation;
+}
+
 export interface IMetadataConversation {
     _id: mongoose.Types.ObjectId;
     experimentId: string;
