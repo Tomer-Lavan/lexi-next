@@ -1,4 +1,4 @@
-import { MessageType } from '@root/models/AppModels';
+import { MessageType, AudioType } from '@root/models/AppModels';
 import { ApiPaths } from '../constants';
 import axiosInstance from './AxiosInstance';
 
@@ -13,11 +13,57 @@ export const sendMessage = async (message: MessageType, conversationId: string):
             message,
             conversationId,
         });
+        //console.log(response)
+        if(response.data.content && response.data.timeDelay != null) {
+            const num_word = response.data.content.trim().split(/\s+/).length;
+            console.log(num_word)
+            await new Promise(resolve => setTimeout(resolve, (num_word / response.data.timeDelay) * 1000));
+        }
         return response.data;
     } catch (error) {
         throw error;
     }
 };
+
+export const sendAudio = async (message: AudioType, conversationId: string): Promise<AudioType> => {
+    console.log(message);
+
+    const formData = new FormData();
+    formData.append("audio", message.content); // Attach the Blob
+    formData.append("role", message.role); // Attach other data
+    formData.append("conversationId", conversationId); // Include conversation ID
+
+    try {
+        const response = await axiosInstance.post(
+            `/${ApiPaths.CONVERSATIONS_PATH}/audio`,
+            formData,
+            { responseType: "blob" } // Ensures we receive binary audio data
+        );
+
+        // Convert response Blob into FormData
+        const receivedFormData = new FormData();
+        receivedFormData.append("audioBlob", response.data);
+
+        // Extract metadata from headers if available
+        const metadata = {
+            contentType: response.headers["content-type"] || "audio/mpeg",
+        };
+        
+        
+
+        return {
+            ...message, // Keep original message fields
+            content: response.data, // Store the received audio as a Blob
+            role: "assistant",
+            //metadata, // Include metadata (optional)
+        };
+    } catch (error) {
+        console.error("Error sending/receiving audio:", error);
+        throw error;
+    }
+};
+
+
 
 export const sendStreamMessage = (
     message: MessageType,
@@ -89,6 +135,11 @@ export const getConversation = async (conversationId: string): Promise<MessageTy
         const response = await axiosInstance.get(
             `/${ApiPaths.CONVERSATIONS_PATH}/conversation?conversationId=${conversationId}`,
         );
+<<<<<<< HEAD
+=======
+        //console.log(response["conversationMetaData"])
+        
+>>>>>>> f08c762 (some updates with delay function)
         return response.data;
     } catch (error) {
         throw error;

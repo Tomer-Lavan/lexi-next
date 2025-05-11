@@ -3,7 +3,14 @@ import { QuestionType, QuestionTypeProps } from '../components/questions/Questio
 export interface MessageType {
     _id?: string;
     role: 'system' | 'user' | 'assistant';
-    content: string;
+    content: string | Blob;
+    userAnnotation?: UserAnnotation;
+}
+
+export interface AudioType {
+    _id?: string;
+    role: 'system' | 'user' | 'assistant';
+    content: Blob | string;
     userAnnotation?: UserAnnotation;
 }
 
@@ -56,6 +63,7 @@ export interface AgentType {
     systemStarterPrompt: string;
     beforeUserSentencePrompt: string;
     afterUserSentencePrompt: string;
+    inverseTimeDelay: number;
     firstChatSentence: string;
     model: string;
     temperature: number;
@@ -63,6 +71,9 @@ export interface AgentType {
     topP: number;
     frequencyPenalty: number;
     presencePenalty: number;
+    //cameraCaptureRate: number;
+    audioInput: number;
+    //vaIntegration: number;
     stopSequences: { value: string; id: string }[];
     createdAt?: Date;
     timestamp?: number;

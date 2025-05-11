@@ -6,9 +6,12 @@ export const defaultSliderSettings = {
     topP: 1,
     frequencyPenalty: 0,
     presencePenalty: 0,
+    //cameraCaptureRate: 5,
+    audioInput: 1,
+    //vaIntegration: 1,
 } as const;
 
-export const agentsOptions = ['gpt-3.5-turbo', 'gpt-4-1106-preview'] as const;
+export const agentsOptions = ['gpt-3.5-turbo', 'gpt-4-1106-preview', 'gpt-4o', 'gpt-4o-mini'] as const;
 
 export const defaultSettings: AgentType = {
     _id: '',
@@ -17,6 +20,7 @@ export const defaultSettings: AgentType = {
     systemStarterPrompt: '',
     beforeUserSentencePrompt: '',
     afterUserSentencePrompt: '',
+    inverseTimeDelay: null,
     firstChatSentence: '',
     model: agentsOptions[0],
     temperature: null,
@@ -24,6 +28,9 @@ export const defaultSettings: AgentType = {
     topP: null,
     frequencyPenalty: null,
     presencePenalty: null,
+    //cameraCaptureRate: null,
+    audioInput: null,
+    //vaIntegration: null,
     stopSequences: [],
 };
 
@@ -66,6 +73,9 @@ export const initialSlidersEnabled = {
     topPEnabled: false,
     frequencyPenaltyEnabled: false,
     presencePenaltyEnabled: false,
+    //cameraCaptureRateEnabled: false,
+    audioInputEnabled: false,
+    //vaIntegrationEnabled: false,
 } as const;
 
 export const ApiPaths = {
