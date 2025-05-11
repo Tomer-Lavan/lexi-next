@@ -351,7 +351,7 @@ const InputBox_mic: React.FC<InputBoxProps> = ({
                     </IconButton>
                 </StyledInputBox>
 
-            )};
+            )}
 
             <Box style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 10 }}>  
                 {isRecording && (

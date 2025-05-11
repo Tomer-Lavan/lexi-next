@@ -107,6 +107,9 @@ const messagesSheetCol = [
     { header: 'Role', key: 'role' },
     { header: 'User Annotation', key: 'userAnnotation' },
     { header: 'Content', key: 'content' },
+    { header: 'Pitch', key: 'pit'},
+    {header: 'Loudness', key: 'loud'},
+    {header: 'SNR', key: 'snr'},
     { header: 'Created At', key: 'createdAt' },
 ];
 
@@ -297,6 +300,9 @@ class DataAggregationService {
                             },
                             conversationNumber: conversation.metadata.conversationNumber,
                             content: message.content,
+                            pit: message.pit,
+                            loud: message.loud,
+                            snr: message.snr,
                             role: message.role,
                             createdAt: message.createdAt,
                             messageNumber: message.messageNumber,
