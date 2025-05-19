@@ -35,6 +35,14 @@ export const AgentDetails = ({ agent }) => (
                         />
                     </ListItem>
                 )}
+                {agent.inverseTimeDelay && (
+                    <ListItem>
+                        <ListItemText
+                            primary="Inverse Time Delay"
+                            secondary={agent.inverseTimeDelay}
+                        />
+                    </ListItem>
+                )}
             </List>
         </Grid>
         <Grid item xs={12} md={6} style={{ paddingLeft: 0 }}>
@@ -71,6 +79,14 @@ export const AgentDetails = ({ agent }) => (
                         secondary={agent.presencePenalty !== null ? agent.presencePenalty : 'Not Active'}
                     />
                 </ListItem>
+                
+                <ListItem>
+                    <ListItemText
+                        primary="Audio Input"
+                        secondary={agent.audioInput !== null ? agent.audioInput : 'Not Active'}
+                    />
+                </ListItem>
+                
                 <ListItem>
                     <ListItemText
                         primary="Stop Sequences"
