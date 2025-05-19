@@ -15,6 +15,7 @@ const agentsSheetCol = [
     { header: 'System Starter Prompt', key: 'systemStarterPrompt' },
     { header: 'Before User Sentence Prompt', key: 'beforeUserSentencePrompt' },
     { header: 'After User Sentence Prompt', key: 'afterUserSentencePrompt' },
+    { header: 'Inverse time delay', key: 'inverseTimeDelay' },
     { header: 'First Chat Sentence', key: 'firstChatSentence' },
     { header: 'Model', key: 'model' },
     { header: 'Temperature', key: 'temperature' },
@@ -22,6 +23,9 @@ const agentsSheetCol = [
     { header: 'Top P', key: 'topP' },
     { header: 'Frequency Penalty', key: 'frequencyPenalty' },
     { header: 'Presence Penalty', key: 'presencePenalty' },
+    //{ header: 'Camera Capture Rate', key: 'cameraCaptureRate'},
+    { header: 'Audio Input', key: 'audioInput'},
+    //{ header: 'Valence-Arousal Integration', key: 'vaIntegration'},
     { header: 'Stop Sequences', key: 'stopSequences' },
 ];
 
@@ -210,6 +214,7 @@ class DataAggregationService {
                 systemStarterPrompt: agent.condition.systemStarterPrompt,
                 beforeUserSentencePrompt: agent.condition.beforeUserSentencePrompt,
                 afterUserSentencePrompt: agent.condition.afterUserSentencePrompt,
+                inverseTimeDelay: agent.condition.inverseTimeDelay,
                 firstChatSentence: agent.condition.firstChatSentence,
                 model: agent.condition.model,
                 temperature: agent.condition.temperature,
@@ -217,6 +222,9 @@ class DataAggregationService {
                 topP: agent.condition.topP,
                 frequencyPenalty: agent.condition.frequencyPenalty,
                 presencePenalty: agent.condition.presencePenalty,
+                //cameraCaptureRate: agent.condition.cameraCaptureRate,
+                audioInput: agent.condition.audioInput,
+                //vaIntegration: agent.condition.vaIntegration,
                 stopSequences: agent.condition.stopSequences,
             });
 
